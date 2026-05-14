@@ -1,7 +1,7 @@
 import os
 import fitz #pymupdf
 import uuid
-
+import re
 from docx2pdf import convert
 
 
@@ -20,6 +20,43 @@ def get_source_type(path):
 
 
 
+def is_heading(line):  #To indentify is a line
+    line = line.strip()
+    
+    if not line:
+        return False
+    
+    if line.isupper():
+        return True
+    
+    if len(line) <= 5 and line[0].isupper():
+        return True
+    
+    if not re.search(r'[.!?]$', line):
+        if len(line.split()) <= 5:
+            return True
+
+    return False
+
+
+
+def structure_text(text):
+    lines = text.split("\n")
+    structured_lines = []
+
+    for line in lines:
+        if not line: 
+            continue
+        if is_heading(line):
+            structured_lines.append(f"{{H1}}{line.strip()}")
+        else:
+            structured_lines.append(line.strip())
+
+    return "\n".join(structured_lines)        
+
+
+
+
 def extract_pdf_text(pdf_path):
 
     pdf = fitz.open(pdf_path)
@@ -29,15 +66,23 @@ def extract_pdf_text(pdf_path):
     for page in pdf:
 
         # WORD-LEVEL extraction
-        words = page.get_text("words")
+        # words = page.get_text("words")
+        # page_text = " ".join(word[4] for word in words)
 
-        page_text = " ".join(word[4] for word in words)
+        # BLOCK-LEVEL extraction
+
+        blocks = page.get_text("blocks")
+        page_text = ""
+        for block in blocks:
+            block_text = block[4].strip()
+            page_text += block_text + "\n"
 
         all_text.append(page_text)
 
     pdf.close()
 
     final_text = "\n".join(all_text)
+    final_text = structure_text(final_text)
 
     return final_text
 
@@ -60,6 +105,7 @@ def convert_docx_to_pdf(docx_path):
     convert(docx_path, output_pdf_path)
 
     return output_pdf_path
+
 
 
 
