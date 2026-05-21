@@ -2,3 +2,6 @@ pymupdf #as PDFs are not text files so this lib converts PDF into readable text
 python-docx
 re
 docx2pdf
+langchain-text-splitters #For chunking
+sentence-transformers
+faiss-cpu
