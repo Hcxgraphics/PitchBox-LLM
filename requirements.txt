@@ -5,3 +5,4 @@ docx2pdf
 langchain-text-splitters #For chunking
 sentence-transformers
 faiss-cpu
+# faiss-gpu-cu12 # if you have cuda 

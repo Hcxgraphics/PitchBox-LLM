@@ -6,28 +6,35 @@ import numpy as np
 
 def create_faiss_index(embeddings, index_type = "hnsw", use_gpu = False, hnsw_m = 32, ef_construction = 200 ): # efConstruction is for index quality during creation
         embeddings = np.array(embeddings, dtype= "float32") #Converting to float
+        faiss.normalize_L2(embeddings)
         dimension = embeddings.shape[1]
 
         if index_type == "flat":
-            index = faiss.IndexFlatL2(dimension) #L2 distance metric : Simpler, easier to implement. Mathematically exact search
+            index = faiss.IndexFlatIP(dimension) #L2 distance metric : Simpler, easier to implement. Mathematically exact search
 
         elif index_type == "hnsw":
-            index = faiss.IndexHNSWFlat(dimension, hnsw_m) #HNSW (Hierarchical Navigable Small World) : More complex, faster for large datasets. Approximate search
+            index = faiss.IndexHNSWFlat(dimension, hnsw_m,faiss.METRIC_INNER_PRODUCT) #HNSW (Hierarchical Navigable Small World) : More complex, faster for large datasets. Approximate search
 
             index.hnsw.efConstruction = ef_construction #Higher values improve recall but increase indexing time and memory usage
         else:
-             raise ValueError("Unsupported index type: {index_type}")
+             raise ValueError(f"Unsupported index type: {index_type}")
         
         if use_gpu:
-            num_gpu = faiss.get_num_gpus()
-            if num_gpu == 0:
-                 print("No GPU found. Using CPU instead.")
-            else:
-                 print(f"Using GPU: {num_gpu} available.")
-                 
-                 res = faiss.StandardGpuResources()
-                index = faiss.index_cpu_to_gpu(res,0,index)
+            try:
+                num_gpu = faiss.get_num_gpus()
+                if num_gpu == 0:
+                    print("No GPU found. Using CPU instead.")
+                else:
+                    print(f"Using GPU: {num_gpu} available.")
+                    
+                    res = faiss.StandardGpuResources()
+                    index = faiss.index_cpu_to_gpu(res,0,index)
             
+            except Exception as e:
+                print("\nGPU FAISS not available.")
+                print("Falling back to CPU.")
+                print(f"\nReason: {e}")
+
         index.add(embeddings)
         return index
 
